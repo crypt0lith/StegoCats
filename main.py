@@ -13,7 +13,7 @@ def generate_key():
 
 
 # Generate key and save as text file
-key: str = generate_key()
+key = generate_key()
 with open('data/key.txt', 'w') as f:
     f.write(key)
 print("key:", key)
