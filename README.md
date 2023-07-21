@@ -45,7 +45,7 @@ python stegocats.py -a decode -i <input_image> -k <key> -kF <key_file>
 
 ### Key Strength Levels:
 
-The `-kS` option allows you to specify the strength level of the generated key. Key strength levels are on a scale from 0 to 9, where 0 is the weakest but still secure, 4 is the default level and generates a strong key, and 9 is almost unbreakable (maximum-entropy). The strength levels represent levels of effectiveness vs computational overhead based on the scale.
+The `-kS` option allows you to specify the strength level of the generated key. Key strength levels are on a scale from 0 to 9, where 0 is the weakest but still secure, 4 is the default level and generates a strong key, and 9 is basically unbreakable (maximum-entropy). The strength levels represent levels of effectiveness vs computational overhead based on the scale. Each consecutive level reflects an escalation of key complexity requirements. Nobody's going to find the ciphertext you hid in that cat meme anyway, but even if they did they still wouldn't be able decrypt it.
 
 ### Validating User-Inputted Keys:
 
