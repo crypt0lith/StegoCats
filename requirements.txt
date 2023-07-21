@@ -1,5 +1,4 @@
-opencv-python~=4.6.0.66
+opencv-python~=4.8.0.74
 docopt~=0.6.2
-numpy~=1.23.5
-
-Pillow~=9.3.0
+numpy~=1.25.1
+Pillow~=10.0.0
