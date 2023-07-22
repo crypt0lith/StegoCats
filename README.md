@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 To encode a message into an image, use the `encode` action with the following options:
 ```shell
-python stegocats.py -a encode -i < input_image > -f < input_file > -o < output_file > -k < key >
+python stegocats.py -a encode -i <input_image> -f <input_file> -o <output_file> -k <key>
 ```
 
 **Options:**
@@ -35,7 +35,7 @@ python stegocats.py -a encode -i < input_image > -f < input_file > -o < output_f
 
 To decode a message from an encoded image, use the `decode` action with the following options:
 ```shell
-python stegocats.py -a decode -i < input_image > -k < key > -kF < key_file >
+python stegocats.py -a decode -i <input_image> -k <key> -kF <key_file>
 ```
 
 **Options:**
@@ -45,7 +45,7 @@ python stegocats.py -a decode -i < input_image > -k < key > -kF < key_file >
 
 ### Key Strength Levels:
 
-The `-kS` option allows you to specify the strength level of the generated key. Key strength levels are on a scale from 0 to 9, where 0 is the weakest but still secure, 4 is medium secure (default), and 9 is almost unbreakable (maximum-entropy). The strength levels represent levels of effectiveness vs computational overhead based on the scale.
+The `-kS` option allows you to specify the strength level of the generated key. Key strength levels are on a scale from 0 to 9, where 0 is the weakest but still secure, 4 is the default level and generates a strong key, and 9 is basically unbreakable (maximum-entropy). The strength levels represent levels of effectiveness vs computational overhead based on the scale. Each consecutive level reflects an escalation of key complexity requirements. Nobody's going to find the ciphertext you hid in that cat meme anyway, but even if they did they still wouldn't be able decrypt it.
 
 ### Validating User-Inputted Keys:
 
@@ -71,4 +71,4 @@ python stegocats.py -a decode -i encoded_image.png -k my_secret_key
 
 ## Disclaimer:
 
-This tool is intended for educational and legitimate purposes only. The authors are not responsible for any misuse or illegal activities that may arise from using this tool. Please use it responsibly and in compliance with applicable laws and regulations.
+This tool is intended for educational and legitimate purposes only. The author is not responsible for any misuse or illegal activities that may arise from using this tool. Please use it responsibly and in compliance with applicable laws and regulations.
