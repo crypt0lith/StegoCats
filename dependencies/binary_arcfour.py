@@ -1,3 +1,5 @@
+# author: crypt0lith
+
 import random
 
 MOD = 256
