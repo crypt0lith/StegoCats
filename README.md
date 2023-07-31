@@ -80,7 +80,10 @@ In this example:
 
 - The `images/hacker.png` image is used as the input image.
 - The `data/python.txt` file contains the Python code payload to be encoded.
-    + `python.txt` begins with a '`# python`' flag so StegoCats will recognize it as Python code.
+    + `python.txt`  begins with a '`# python`' flag so StegoCats will recognize it as Python code.
+      
+    + Link to `python.txt`  [here](https://github.com/crypt0lith/StegoCats/blob/master/examples/python_payload/data/python.txt).
+      
 - The `-kS 9` option specifies a custom key strength level of 9 for key generation.
 - The `-o output/hacker_encoded_payload.png` option sets the output image filename to `output/hacker_encoded_payload.png`.
 - StegoCats embeds the Python code payload into the image using the LSB steganography technique and saves the output image.
