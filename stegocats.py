@@ -9,13 +9,12 @@ import tempfile
 import webbrowser
 import re
 import io
-from code import compile_command
+import zlib
 
 from PIL import Image
 
 from dependencies import binary_arcfour
 from dependencies.LSBSteg import *
-from dependencies.list import *
 
 
 class StegoCats:
@@ -49,7 +48,7 @@ class StegoCats:
             6: 20,
             7: 24,
             8: 32,
-            9: 63
+            9: 64
         }
 
         if key_strength in key_strength_levels:
@@ -58,82 +57,17 @@ class StegoCats:
         generated_key = ''.join(secrets.choice(safe_characters) for _ in range(key_length))
         return generated_key
 
+    def save_key_to_file(self, key, output_file):
+        key_hex = key.encode('utf-8').hex()
+        key_file_name = os.path.abspath(
+            os.path.join("data", os.path.basename(output_file).replace('.png', '.key').replace('.jpg', '.key')))
+        with open(key_file_name, 'w') as f:
+            f.write(key_hex)
+        print("Key saved as:", key_file_name)
+
     def read_plaintext_file(self, input_file):
         with open(input_file) as f:
             return ' '.join(line.strip() for line in f)
-
-    def encrypt_binary_arcfour(self, key_bytes, data):
-        # Function to encrypt data using the binary RC4 algorithm
-        salt = os.urandom(16)  # Generate a random 16-byte salt
-        ciphertext = binary_arcfour.encrypt(key_bytes, salt, data)  # Encrypt data using RC4 with the key and salt
-        return salt + ciphertext  # Return the concatenated salt and ciphertext
-
-    def encrypt_message(self, key, plaintext_data):
-        key_bytes = key.encode('utf-8')
-        plaintext_bytes = plaintext_data
-        self.print_message(f"Plaintext: {plaintext_bytes}")
-        self.print_message(f"Cipher key: {key_bytes}", is_debug=True)
-        self.print_message(f"Hash of the key: {hash(key_bytes)}", is_debug=True)
-        ciphertext_bytes = self.encrypt_binary_arcfour(key_bytes, plaintext_bytes)
-        self.print_message(f"Ciphertext: {ciphertext_bytes}")
-        return ciphertext_bytes
-
-    def resize_image(self, input_image, max_size=1000000):
-        # Function to resize an image while maintaining the aspect ratio and ensuring the output size does not exceed
-        # max_size
-        with tempfile.NamedTemporaryFile(suffix='.png', dir=self.temp_dir, delete=False) as temp_image:
-            # Create a temporary image file with .png extension
-            output_name = temp_image.name
-            with Image.open(input_image) as image:
-                aspect_ratio = image.width / image.height
-
-                # A dictionary with common aspect ratios and their corresponding width-to-height ratios
-                aspect_ratios = {
-                    1 / 1: (1, 1),
-                    9 / 16: (9, 16),
-                    16 / 9: (16, 9),
-                    4 / 5: (4, 5),
-                    5 / 4: (5, 4),
-                    5 / 7: (5, 7),
-                    7 / 5: (7, 5)
-                }
-                closest_aspect_ratio = min(aspect_ratios, key=lambda x: abs(x - aspect_ratio))
-                target_aspect_ratio = aspect_ratios[closest_aspect_ratio]
-                new_width = image.width
-                new_height = image.height
-                if aspect_ratio > closest_aspect_ratio:
-                    new_width = int(new_height * closest_aspect_ratio)
-                else:
-                    new_height = int(new_width / closest_aspect_ratio)
-
-                # Resize the image to fit the target aspect ratio
-                resized_image = image.resize((new_width, new_height))
-
-                # If the output image size exceeds max_size, further resize to fit max_size
-                resized_image.save(output_name, format="PNG", optimize=True)
-                output_size = os.path.getsize(output_name)
-                if output_size > max_size:
-                    ratio = max_size / output_size
-                    new_width = int(new_width * ratio)
-                    new_height = int(new_height * ratio)
-                    resized_image = image.resize((new_width, new_height))
-                    resized_image.save(output_name, format="PNG", optimize=True)
-        self.temp_files.append(output_name)
-        return output_name
-
-    def hide_message(self, input_image, key, data, output_file):
-        # Function to hide binary data in an image using the LSB (Least Significant Bit) method
-        self.print_message("Hiding message in the image")
-        self.print_message(f"Input image: {input_image}", is_debug=True)
-        self.print_message(f"Output image: {output_file}", is_debug=True)
-        steg = LSBSteg(cv2.imread(input_image))  # Initialize the LSBSteg class with the input image
-        new_img = steg.encode_binary(data)  # Embed the binary data in the image using LSB
-        cv2.imwrite(output_file, new_img)  # Save the steganographic image
-
-        # Clean up temporary files
-        if os.path.isfile(data):
-            os.remove(data)
-            self.print_message(f"Temporary file {data} has been removed.", is_debug=True)
 
     def read_key(self, key_file):
         with open(key_file, 'r') as f:
@@ -146,20 +80,43 @@ class StegoCats:
             print("Error: The key is not in a valid hexadecimal format.")
             sys.exit(1)
 
-    def save_key_to_file(self, key, output_file):
-        key_hex = key.encode('utf-8').hex()
-        key_file_name = os.path.abspath(
-            os.path.join("data", os.path.basename(output_file).replace('.png', '.key').replace('.jpg', '.key')))
-        with open(key_file_name, 'w') as f:
-            f.write(key_hex)
-        print("Key saved as:", key_file_name)
+    def compress_data(self, data):
+        # Compression using zlib
+        return zlib.compress(data)
+
+    def encrypt_binary_arcfour(self, key_bytes, data):
+        # Compression using zlib
+        compressed_data = self.compress_data(data)
+
+        # Encryption using RC4
+        salt = os.urandom(16)  # Generate a random 16-byte salt
+        ciphertext = binary_arcfour.encrypt(key_bytes, salt, compressed_data)
+
+        return salt + ciphertext  # Return the concatenated salt and ciphertext
+
+    def encrypt_message(self, key, plaintext_data):
+        key_bytes = key.encode('utf-8')
+        plaintext_bytes = plaintext_data
+        self.print_message(f"Plaintext: {plaintext_bytes}")
+        self.print_message(f"Cipher key: {key_bytes}", is_debug=True)
+        self.print_message(f"Hash of the key: {hash(key_bytes)}", is_debug=True)
+        ciphertext_bytes = self.encrypt_binary_arcfour(key_bytes, plaintext_bytes)
+        self.print_message(f"Ciphertext: {ciphertext_bytes}")
+        return ciphertext_bytes
+
+    def decompress_data(self, data):
+        # Decompression using zlib
+        return zlib.decompress(data)
 
     def decrypt_binary_arcfour(self, key_bytes, data):
-        # Function to decrypt data using the binary RC4 algorithm
-        self.print_message("Decrypting data using binary RC4 algorithm", is_debug=True)
+        # Decryption using RC4
         salt = data[:16]  # Extract the salt (first 16 bytes) from the input data
         ciphertext = data[16:]  # Extract the ciphertext (remaining bytes) from the input data
-        return binary_arcfour.decrypt(key_bytes, salt, ciphertext)  # Decrypt using RC4 with the key and salt
+        compressed_data = binary_arcfour.decrypt(key_bytes, salt, ciphertext)
+
+        # Decompression using zlib
+        decompressed_data = self.decompress_data(compressed_data)
+        return decompressed_data
 
     def decrypt_message(self, input_image, key):
         # Function to decrypt hidden data from an image using the provided key
@@ -185,6 +142,92 @@ class StegoCats:
             exec(code, globals(), locals())
         except Exception as e:
             print(f"Error while executing Python code: {e}")
+
+    def calculate_max_embedded_size(self, input_image, data_size):
+        # Function to calculate the maximum size that can be embedded in the input image
+        with Image.open(input_image) as image:
+            # Get the image format and compression quality
+            image_format = image.format.lower()
+            compression_quality = 100  # Default quality (100% - lossless)
+
+            if image_format in ["jpeg", "jpg"]:
+                # For JPEG format, get the compression quality
+                if "quality" in image.info:
+                    compression_quality = image.info["quality"]
+                else:
+                    # If quality information is not available, assume maximum quality
+                    compression_quality = 100
+
+            # Calculate the maximum embedded size based on the image size, format, and compression quality
+            max_embedded_size = (image.width * image.height * (compression_quality / 100) * 3) // 8
+
+            if max_embedded_size < data_size:
+                raise ValueError("Data size exceeds the available space in the input image")
+
+            return max_embedded_size
+
+    def resize_image(self, input_image, max_embedded_size):
+        # Function to resize an image while maintaining the aspect ratio and ensuring the output size does not exceed
+        # max_embedded_size
+        with tempfile.NamedTemporaryFile(suffix='.png', dir=self.temp_dir, delete=False) as temp_image:
+            # Create a temporary image file with .png extension
+            output_name = temp_image.name
+            with Image.open(input_image) as image:
+                aspect_ratio = image.width / image.height
+
+                # A dictionary with common aspect ratios and their corresponding width-to-height ratios
+                aspect_ratios = {
+                    1 / 1: (1, 1),
+                    9 / 16: (9, 16),
+                    16 / 9: (16, 9),
+                    4 / 5: (4, 5),
+                    5 / 4: (5, 4),
+                    5 / 7: (5, 7),
+                    7 / 5: (7, 5)
+                }
+                closest_aspect_ratio = min(aspect_ratios, key=lambda x: abs(x - aspect_ratio))
+                target_aspect_ratio = aspect_ratios[closest_aspect_ratio]
+                new_width = image.width
+                new_height = image.height
+                if aspect_ratio > closest_aspect_ratio:
+                    new_width = int(new_height * closest_aspect_ratio)
+                else:
+                    new_height = int(new_width / closest_aspect_ratio)
+
+                # Shrink the image iteratively to reduce the size
+                while True:
+                    resized_image = image.copy()
+                    resized_image.thumbnail((new_width, new_height), Image.LANCZOS)
+                    resized_image.save(output_name, format="PNG", optimize=True)
+                    output_size = os.path.getsize(output_name)
+
+                    if output_size > max_embedded_size:
+                        break
+
+                    new_width *= 2
+                    new_height *= 2
+
+            # Resize one last time to fit within the max_embedded_size
+            final_resized_image = image.copy()
+            final_resized_image.thumbnail((new_width // 2, new_height // 2), Image.LANCZOS)
+            final_resized_image.save(output_name, format="PNG", optimize=True)
+
+        self.temp_files.append(output_name)
+        return output_name
+
+    def hide_message(self, input_image, key, data, output_file):
+        # Function to hide binary data in an image using the LSB (Least Significant Bit) method
+        self.print_message("Hiding message in the image")
+        self.print_message(f"Input image: {input_image}", is_debug=True)
+        self.print_message(f"Output image: {output_file}", is_debug=True)
+        steg = LSBSteg(cv2.imread(input_image))  # Initialize the LSBSteg class with the input image
+        new_img = steg.encode_binary(data)  # Embed the binary data in the image using LSB
+        cv2.imwrite(output_file, new_img)  # Save the steganographic image
+
+        # Clean up temporary files
+        if os.path.isfile(data):
+            os.remove(data)
+            self.print_message(f"Temporary file {data} has been removed.", is_debug=True)
 
     def add_temp_file(self, temp_file):
         self.temp_files.append(temp_file)
@@ -214,8 +257,8 @@ class StegoCats:
 
 def main():
     parser = argparse.ArgumentParser(description="StegoCats - Image Steganography Tool")
-    parser.add_argument("-a", "--action", choices=["encode", "decode"], required=True,
-                        help="Specify the action to perform: encode or decode")
+    parser.add_argument("mode", choices=["encode", "decode"],
+                        help="Select 'encode' to hide data in an image or 'decode' to extract data from an image")
     parser.add_argument("-i", "--input-image", required=True, metavar="<input_image>",
                         help="Path to the input image")
 
@@ -235,11 +278,11 @@ def main():
     decoding_group.add_argument("-kF", "--key-file", metavar="<key_file>",
                                 help="Path to the key file for decoding")
     decoding_group.add_argument("--output-result", metavar="<output_result>",
-                        help="Path to the output file for the decoded result")
+                                help="Path to the output file for the decoded result")
     decoding_group.add_argument("-y", "--yes", action="store_true",
-                        help="Automatically answer yes to prompts (e.g., execute Python code, open hyperlinks).")
+                                help="Automatically answer yes to prompts (e.g., execute Python code, open hyperlinks).")
     decoding_group.add_argument("-n", "--no", action="store_true",
-                        help="Automatically answer no to prompts (e.g., execute Python code, open hyperlinks).")
+                                help="Automatically answer no to prompts (e.g., execute Python code, open hyperlinks).")
 
     # Common options for both encoding and decoding
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
@@ -264,7 +307,7 @@ def main():
         # If no key is provided, generate a random key based on the specified key_strength
         generated_key = stegocats.generate_key(args.key_strength)
 
-    if args.action == "encode":
+    if args.mode == "encode":
         # Perform the encoding operation
 
         # Check if the input file is provided for encoding
@@ -286,13 +329,11 @@ def main():
             else:
                 # Save the custom key to a key file associated with the output image
                 stegocats.save_key_to_file(key, args.output_file)
-                print("Key:", key)
         else:
             # If no key is provided, use the randomly generated key and save it to a key file
             key = generated_key
             if args.output_file:
                 stegocats.save_key_to_file(key, args.output_file)
-                print("Key:", key)
 
         # Read the plaintext data from the input file
         with open(args.input_file, 'rb') as f:
@@ -304,15 +345,22 @@ def main():
         with open(temp_data_file, 'wb') as f:
             f.write(ciphertext)
 
+        # Calculate the max embedded size based on the size of the input image and the encrypted data
+        data_size = os.path.getsize(temp_data_file)
+        max_embedded_size = stegocats.calculate_max_embedded_size(args.input_image, data_size)
+
+        if data_size > max_embedded_size:
+            raise ValueError("Data size exceeds the available space in the input image")
+
         # Resize the input image and hide the encrypted data in the resized image
-        resized_image_name = stegocats.resize_image(args.input_image, max_size=100000)
+        resized_image_name = stegocats.resize_image(args.input_image, max_embedded_size)
         with open(temp_data_file, "rb") as f:
             data = f.read()
         stegocats.hide_message(resized_image_name, key, data, args.output_file)
 
         print('Image saved as ' + os.path.abspath(args.output_file))
 
-    elif args.action == "decode":
+    elif args.mode == "decode":
         # Perform the decoding operation
 
         if args.key:
@@ -340,10 +388,10 @@ def main():
 
         if decrypted_message.strip().startswith("# python"):
             # If the decrypted message contains Python code, prompt the user to execute it
-            print("Detected Python code in the decrypted message:")
-            print(decrypted_message)
+            print("Detected Python code in the decrypted message.")
 
             if not args.yes and not args.no:
+                print(decrypted_message)
                 user_input = input("Do you want to execute the Python code? (y/n): ").lower()
                 while user_input not in ['y', 'n']:
                     print("Invalid input. Please enter 'y' or 'n'.")
