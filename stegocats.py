@@ -39,15 +39,15 @@ class StegoCats:
         safe_characters = string.ascii_letters + string.digits + '$@#%'
         key_length = 12
         key_strength_levels = {
-            0: 6,
-            1: 8,
-            2: 10,
+            0: 5,
+            1: 7,
+            2: 8,
             3: 10,
             4: 12,
             5: 16,
-            6: 20,
-            7: 24,
-            8: 32,
+            6: 24,
+            7: 32,
+            8: 48,
             9: 64
         }
 
