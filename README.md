@@ -32,7 +32,7 @@ stegocats.py encode -i <input_image> -f <input_file> -o <output_file> -k <key>
 - `-f`, `--input-file`: Path to the input text file for encoding (required).
 - `-o`, `--output-file`: Path to the output image file for encoding (optional). If not provided, a default output filename will be used.
 - `-k`, `--key`: Use a custom key for encoding. Cannot be used with -kF.
-- `-kS`, `--key-strength`: Specify the strength level of the generated key (0-9). Default: 4.
+- `-kS`, `--key-strength`: Specify the strength level of the generated key (0-9). Default: 5 (128-bit key).
 ### Decode a Message
 
 To decode a message from an encoded image, use the `decode` mode with the following options:
