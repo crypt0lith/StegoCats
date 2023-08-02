@@ -37,7 +37,7 @@ class StegoCats:
 
     def generate_key(self, key_strength):
         safe_characters = string.ascii_letters + string.digits + '$@#%'
-        key_length = 12
+        key_length = 16
         key_strength_levels = {
             0: 5,
             1: 7,
@@ -270,8 +270,8 @@ def main():
                                 help="Path to the output image file for encoding")
     encoding_group.add_argument("-k", "--key", metavar="<key>",
                                 help="Use a custom key for encoding. Cannot be used with -kF.")
-    encoding_group.add_argument("-kS", "--key-strength", type=int, choices=range(10), default=4,
-                                help="Specify the strength level of the generated key (0-9). Default: 4.")
+    encoding_group.add_argument("-kS", "--key-strength", type=int, choices=range(10), default=5,
+                                help="Specify the strength level of the generated key (0-9). Default: 5.")
 
     # Grouping the decoding-related arguments together
     decoding_group = parser.add_argument_group("Decoding options")
